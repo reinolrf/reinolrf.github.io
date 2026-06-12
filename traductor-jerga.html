@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Traductor de Jerga — Médica y Legal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=Kalam:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  :root {
+    --bg: #eef1ef;
+    --paper: #fbfbf8;
+    --ink: #1f2a2e;
+    --muted: #6b7680;
+    --legal: #fcd34d;
+    --legal-soft: #fdf3d6;
+    --medical: #8fe3bf;
+    --medical-soft: #e1f7ee;
+    --accent: #ff5c4d;
+    --accent-dark: #d8442f;
+    --line: #e0e4e1;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 2.5rem 1.25rem 4rem;
+  }
+
+  .wrap { max-width: 920px; margin: 0 auto; }
+
+  /* ───────── HEADER ───────── */
+  header { text-align: center; margin-bottom: 2.4rem; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    margin-bottom: 1.25rem;
+  }
+  .badge .arrow { color: var(--accent); }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: clamp(2.2rem, 6vw, 3.4rem);
+    line-height: 1.08;
+    margin: 0 0 0.75rem;
+    letter-spacing: -0.01em;
+  }
+  h1 .hl-demo {
+    background: var(--legal);
+    padding: 0 0.15em;
+    border-radius: 4px;
+  }
+
+  .subtitle {
+    max-width: 540px;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 1.02rem;
+    line-height: 1.6;
+  }
+
+  /* ───────── INPUT CARD ───────── */
+  .input-card {
+    background: var(--paper);
+    border-radius: 16px;
+    padding: 1.8rem;
+    box-shadow: 0 14px 40px -20px rgba(31,42,46,0.35);
+    border: 1px solid var(--line);
+    margin-bottom: 1.6rem;
+  }
+
+  .input-card label {
+    display: block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    margin-bottom: 0.8rem;
+  }
+
+  textarea#input-text {
+    width: 100%;
+    min-height: 160px;
+    resize: vertical;
+    border: 2px solid var(--line);
+    border-radius: 10px;
+    padding: 1rem;
+    font-family: 'Source Serif 4', serif;
+    font-size: 1.05rem;
+    line-height: 1.6;
+    color: var(--ink);
+    background: #fff;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  textarea#input-text:focus { border-color: var(--accent); }
+
+  .examples {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.9rem;
+  }
+
+  .chip {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 0.45rem 1rem;
+    cursor: pointer;
+    color: var(--ink);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .chip:hover { border-color: var(--accent); background: #fff; }
+
+  .actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1.2rem;
+  }
+
+  .btn-translate {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 0.9rem 2.1rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-translate:hover { background: var(--accent-dark); }
+  .btn-translate:active { transform: scale(0.98); }
+
+  /* ───────── UPLOAD / OCR ───────── */
+  .upload-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.9rem;
+  }
+
+  .upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border: 2px dashed var(--line);
+    border-radius: 10px;
+    padding: 0.65rem 1.2rem;
+    cursor: pointer;
+    color: var(--ink);
+    background: transparent;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .upload-btn:hover { border-color: var(--accent); background: #fff; }
+
+  .image-preview {
+    max-height: 56px;
+    border-radius: 6px;
+    border: 1px solid var(--line);
+    display: none;
+  }
+
+  .ocr-progress-wrap {
+    margin-top: 0.7rem;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--bg);
+    overflow: hidden;
+    display: none;
+  }
+  .ocr-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    transition: width 0.2s ease;
+  }
+  .ocr-status-text {
+    font-size: 0.82rem;
+    color: var(--muted);
+    margin: 0.5rem 0 0;
+    min-height: 1.2em;
+  }
+
+  /* ───────── LEGEND ───────── */
+  .legend {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 1.6rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .legend .swatch {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+    display: inline-block;
+  }
+  .swatch.legal { background: var(--legal); }
+  .swatch.medical { background: var(--medical); }
+
+  /* ───────── RESULTS ───────── */
+  .results {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    gap: 1.4rem;
+  }
+  @media (max-width: 820px) {
+    .results { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--paper);
+    border-radius: 16px;
+    border: 1px solid var(--line);
+    padding: 1.6rem;
+  }
+
+  .panel h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .doc-text {
+    font-family: 'Source Serif 4', serif;
+    font-size: 1.08rem;
+    line-height: 1.85;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .doc-empty, .notes-empty {
+    color: var(--muted);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  mark.hl {
+    padding: 0.04em 0.2em;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    transition: box-shadow 0.15s, transform 0.1s;
+  }
+  mark.hl-legal { background: var(--legal); }
+  mark.hl-medical { background: var(--medical); }
+  mark.hl.active {
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+
+  .notes-count {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+
+  .notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .note-card {
+    font-family: 'Kalam', cursive;
+    border-radius: 6px;
+    padding: 0.85rem 1.05rem;
+    box-shadow: 2px 4px 10px -4px rgba(31,42,46,0.25);
+    transition: box-shadow 0.15s, transform 0.15s;
+    cursor: pointer;
+  }
+  .note-card:nth-child(odd)  { transform: rotate(-0.8deg); }
+  .note-card:nth-child(even) { transform: rotate(0.8deg); }
+  .note-card.legal   { background: var(--legal-soft); }
+  .note-card.medical { background: var(--medical-soft); }
+  .note-card.active {
+    box-shadow: 0 0 0 3px var(--accent);
+    transform: rotate(0deg) scale(1.02);
+  }
+
+  .note-term {
+    font-weight: 700;
+    font-size: 1.08rem;
+    margin: 0 0 0.25rem;
+    text-transform: capitalize;
+  }
+  .note-def {
+    font-size: 0.98rem;
+    line-height: 1.45;
+    color: #3a3a36;
+  }
+
+  /* ───────── FOOTER ───────── */
+  footer {
+    max-width: 920px;
+    margin: 2.5rem auto 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    padding: 0 1rem;
+  }
+  footer p { margin: 0.3rem 0; }
+
+  @media (max-width: 560px) {
+    .input-card, .panel { padding: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="badge">Jerga <span class="arrow">→</span> Lenguaje claro</div>
+    <h1>Del informe al <span class="hl-demo">lenguaje</span> de verdad</h1>
+    <p class="subtitle">Pega un párrafo de un contrato o de un informe médico. Resaltamos los términos técnicos y te explicamos qué significan, en palabras sencillas.</p>
+  </header>
+
+  <div class="input-card">
+    <label for="input-text">Pega tu texto aquí</label>
+    <textarea id="input-text" placeholder="Por ejemplo: «El paciente presenta un cuadro de hipertensión con antecedentes de bronquitis crónica...» o «El arrendatario deberá abonar la cláusula de indemnización en caso de rescisión...»"></textarea>
+
+    <div class="upload-row">
+      <label class="upload-btn" for="image-input">📷 Subir foto del documento</label>
+      <input type="file" id="image-input" accept="image/*" hidden onchange="procesarImagen(event)">
+      <img id="image-preview" class="image-preview" alt="Vista previa">
+    </div>
+    <div class="ocr-progress-wrap" id="ocr-progress-wrap"><div class="ocr-progress-bar" id="ocr-progress-bar"></div></div>
+    <p class="ocr-status-text" id="ocr-status-text"></p>
+
+    <div class="examples">
+      <button class="chip" onclick="cargarEjemplo('medico')">📄 Probar con ejemplo médico</button>
+      <button class="chip" onclick="cargarEjemplo('legal')">📄 Probar con ejemplo legal</button>
+      <button class="chip" onclick="limpiar()">🗑️ Limpiar</button>
+    </div>
+    <div class="actions">
+      <button class="btn-translate" onclick="traducir()">Traducir</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="swatch legal"></span> Jerga legal</span>
+    <span><span class="swatch medical"></span> Jerga médica</span>
+  </div>
+
+  <div class="results">
+    <div class="panel">
+      <h2>Tu texto, resaltado</h2>
+      <div class="doc-text" id="doc-text">
+        <span class="doc-empty">Aquí aparecerá tu texto con los términos técnicos resaltados.</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Notas al margen</h2>
+      <div id="notes-count" class="notes-count" style="display:none;"></div>
+      <div class="notes-list" id="notes-list">
+        <span class="notes-empty">Las explicaciones en lenguaje sencillo aparecerán aquí, una por cada término encontrado.</span>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Este traductor se basa en un glosario de términos comunes y ofrece explicaciones orientativas para ayudarte a entender mejor un texto.</p>
+    <p>La lectura de fotos (OCR) funciona mejor con texto impreso o escrito a máquina; con letra manuscrita puede cometer errores — revisa siempre el texto extraído.</p>
+    <p>No sustituye el diagnóstico de un médico ni el consejo de un abogado — para decisiones importantes, consulta siempre con un profesional.</p>
+  </footer>
+
+</div>
+
+<script>
+  /* ═══════════ GLOSARIO ═══════════ */
+  const glosario = [
+    // ── LEGAL ──
+    { term: "cláusula de indemnización", cat: "legal", def: "La cantidad que tendrás que pagar si no cumples lo acordado." },
+    { term: "cláusula abusiva", cat: "legal", def: "Una condición injusta para una de las partes, que puede ser declarada ilegal y anulada." },
+    { term: "cláusula de confidencialidad", cat: "legal", def: "El compromiso de no contar a nadie cierta información." },
+    { term: "cláusula de no competencia", cat: "legal", def: "La prohibición de trabajar para empresas de la competencia durante un tiempo." },
+    { term: "cláusula suelo", cat: "legal", def: "Un límite mínimo de interés que pagarás en una hipoteca, aunque el interés general baje más." },
+    { term: "cláusula", cat: "legal", def: "Una condición o regla concreta dentro de un contrato." },
+    { term: "resolución del contrato", cat: "legal", def: "Dar por terminado el contrato, normalmente porque alguna de las partes no ha cumplido lo acordado." },
+    { term: "rescisión", cat: "legal", def: "La cancelación o el fin anticipado de un contrato." },
+    { term: "subrogación", cat: "legal", def: "Cuando otra persona o entidad pasa a ocupar tu lugar en un contrato (por ejemplo, en una hipoteca)." },
+    { term: "arrendatario", cat: "legal", def: "La persona que alquila algo: el inquilino." },
+    { term: "arrendador", cat: "legal", def: "La persona que alquila su propiedad a otra: el propietario." },
+    { term: "fianza", cat: "legal", def: "Dinero que se entrega como garantía y que se devuelve si todo va bien." },
+    { term: "aval", cat: "legal", def: "Una persona o entidad que se compromete a pagar si tú no puedes hacerlo." },
+    { term: "notificación fehaciente", cat: "legal", def: "Un aviso oficial que se puede demostrar que se ha realizado, por ejemplo por correo certificado." },
+    { term: "tácito", cat: "legal", def: "Algo que se entiende como acordado, aunque no se haya dicho explícitamente." },
+    { term: "tácita", cat: "legal", def: "Algo que se entiende como acordado, aunque no se haya dicho explícitamente." },
+    { term: "salvo pacto en contrario", cat: "legal", def: "A menos que se acuerde algo distinto por escrito." },
+    { term: "vigencia", cat: "legal", def: "El periodo de tiempo durante el cual algo es válido." },
+    { term: "prórroga", cat: "legal", def: "Una ampliación del plazo original." },
+    { term: "incumplimiento", cat: "legal", def: "No hacer lo que se prometió en el contrato." },
+    { term: "litigio", cat: "legal", def: "Un conflicto legal que normalmente termina resolviéndose en los tribunales." },
+    { term: "demandante", cat: "legal", def: "La persona o empresa que presenta la demanda (la denuncia)." },
+    { term: "demandado", cat: "legal", def: "La persona o empresa contra la que se presenta la demanda." },
+    { term: "jurisdicción", cat: "legal", def: "El lugar o tribunal con autoridad para resolver el caso." },
+    { term: "mancomunado", cat: "legal", def: "Cuando varias personas comparten una responsabilidad de forma conjunta." },
+    { term: "responsabilidad solidaria", cat: "legal", def: "Cuando cada persona responde por la totalidad de la deuda, no solo por su parte." },
+    { term: "cesión de derechos", cat: "legal", def: "Transferir tus derechos sobre algo a otra persona." },
+    { term: "garantía", cat: "legal", def: "Una promesa de que algo funcionará, se reparará o se cumplirá." },
+    { term: "usufructo", cat: "legal", def: "El derecho a usar algo (como una vivienda) y disfrutar de sus beneficios, sin ser su propietario." },
+    { term: "poder notarial", cat: "legal", def: "Un documento legal que autoriza a otra persona a actuar en tu nombre." },
+    { term: "pleno dominio", cat: "legal", def: "Ser propietario completo de algo, sin restricciones." },
+    { term: "gravamen", cat: "legal", def: "Una carga o deuda que pesa sobre una propiedad, por ejemplo una hipoteca." },
+    { term: "embargo", cat: "legal", def: "Cuando, por una deuda, te retiran legalmente bienes o dinero." },
+    { term: "comparecencia", cat: "legal", def: "Presentarse físicamente ante un juez o ante otra autoridad." },
+    { term: "notario", cat: "legal", def: "Un profesional que da validez legal a ciertos documentos." },
+    { term: "de mutuo acuerdo", cat: "legal", def: "Cuando ambas partes están de acuerdo con algo." },
+
+    // ── MÉDICO ──
+    { term: "diagnóstico diferencial", cat: "medical", def: "La lista de posibles enfermedades que podrían explicar los síntomas, antes de confirmar cuál es la causa real." },
+    { term: "insuficiencia renal", cat: "medical", def: "Los riñones no están funcionando correctamente." },
+    { term: "insuficiencia cardíaca", cat: "medical", def: "El corazón no bombea la sangre con la eficacia necesaria." },
+    { term: "hipertensión", cat: "medical", def: "Presión arterial alta." },
+    { term: "hipotensión", cat: "medical", def: "Presión arterial baja." },
+    { term: "taquicardia", cat: "medical", def: "El corazón late más rápido de lo normal." },
+    { term: "bradicardia", cat: "medical", def: "El corazón late más despacio de lo normal." },
+    { term: "neumonía", cat: "medical", def: "Una infección en los pulmones." },
+    { term: "bronquitis", cat: "medical", def: "Inflamación de los conductos que llevan el aire a los pulmones." },
+    { term: "gastritis", cat: "medical", def: "Inflamación del revestimiento del estómago." },
+    { term: "migraña", cat: "medical", def: "Un dolor de cabeza muy intenso, a menudo acompañado de náuseas o sensibilidad a la luz." },
+    { term: "anemia", cat: "medical", def: "Falta de glóbulos rojos o de hierro en la sangre, lo que provoca cansancio." },
+    { term: "benigno", cat: "medical", def: "Que no es grave ni está relacionado con el cáncer." },
+    { term: "benigna", cat: "medical", def: "Que no es grave ni está relacionada con el cáncer." },
+    { term: "maligno", cat: "medical", def: "Relacionado con el cáncer; potencialmente grave." },
+    { term: "maligna", cat: "medical", def: "Relacionada con el cáncer; potencialmente grave." },
+    { term: "asintomático", cat: "medical", def: "Que no presenta síntomas, aunque la condición exista." },
+    { term: "asintomática", cat: "medical", def: "Que no presenta síntomas, aunque la condición exista." },
+    { term: "idiopático", cat: "medical", def: "De causa desconocida o no identificada." },
+    { term: "idiopática", cat: "medical", def: "De causa desconocida o no identificada." },
+    { term: "crónico", cat: "medical", def: "Que dura mucho tiempo o es permanente." },
+    { term: "crónica", cat: "medical", def: "Que dura mucho tiempo o es permanente." },
+    { term: "agudo", cat: "medical", def: "Que aparece de forma repentina e intensa." },
+    { term: "aguda", cat: "medical", def: "Que aparece de forma repentina e intensa." },
+    { term: "metástasis", cat: "medical", def: "Cuando un cáncer se extiende desde su origen a otras partes del cuerpo." },
+    { term: "biopsia", cat: "medical", def: "Tomar una pequeña muestra de tejido para analizarla en el laboratorio." },
+    { term: "comorbilidad", cat: "medical", def: "Tener otra enfermedad además de la principal." },
+    { term: "pronóstico", cat: "medical", def: "Lo que se espera que ocurra con la evolución de la enfermedad." },
+    { term: "etiología", cat: "medical", def: "La causa que origina una enfermedad." },
+    { term: "edema", cat: "medical", def: "Hinchazón causada por la acumulación de líquido." },
+    { term: "inflamación", cat: "medical", def: "Hinchazón, calor y dolor: la respuesta natural del cuerpo ante una lesión o infección." },
+    { term: "fractura", cat: "medical", def: "Un hueso roto." },
+    { term: "hematoma", cat: "medical", def: "Un moratón: sangre acumulada bajo la piel." },
+    { term: "profilaxis", cat: "medical", def: "Un tratamiento o medida para prevenir una enfermedad." },
+    { term: "hiperglucemia", cat: "medical", def: "Nivel de azúcar en sangre más alto de lo normal." },
+    { term: "hipoglucemia", cat: "medical", def: "Nivel de azúcar en sangre más bajo de lo normal." },
+    { term: "dermatitis", cat: "medical", def: "Inflamación o irritación de la piel." },
+    { term: "apnea", cat: "medical", def: "Pausas breves en la respiración, normalmente durante el sueño." },
+    { term: "ambulatorio", cat: "medical", def: "Un tratamiento que no requiere quedarse ingresado en el hospital." },
+    { term: "ambulatoria", cat: "medical", def: "Un tratamiento que no requiere quedarse ingresado en el hospital." },
+    { term: "contraindicación", cat: "medical", def: "Una razón por la que no se debe usar un medicamento o tratamiento." },
+    { term: "posología", cat: "medical", def: "Las indicaciones sobre cómo y cuánto tomar de un medicamento." },
+  ];
+
+  // Mapa de búsqueda y patrón ordenado por longitud (los términos más largos primero)
+  const glosarioMap = {};
+  glosario.forEach(g => { glosarioMap[g.term.toLowerCase()] = g; });
+
+  const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const terminosOrdenados = [...glosario].sort((a, b) => b.term.length - a.term.length);
+  const patron = terminosOrdenados.map(g => escapeRegex(g.term)).join('|');
+  const regex = new RegExp(`(?<![\\p{L}\\p{N}])(${patron})(?![\\p{L}\\p{N}])`, 'giu');
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  /* ═══════════ EJEMPLOS ═══════════ */
+  const ejemplos = {
+    medico: "El paciente presenta un cuadro clínico compatible con neumonía, con hipertensión de base y antecedente de bronquitis crónica. Se observa inflamación leve, sin signos de proceso maligno. Se indica tratamiento ambulatorio según la posología prescrita. El pronóstico es favorable y no se identifica comorbilidad relevante.",
+    legal: "En caso de incumplimiento de cualquier cláusula del presente contrato, el arrendatario deberá abonar la cláusula de indemnización correspondiente, sin perjuicio de la resolución del contrato y la pérdida de la fianza depositada. Salvo pacto en contrario, las partes quedan sometidas a la jurisdicción del domicilio del arrendador, con responsabilidad solidaria por las obligaciones derivadas de este acuerdo."
+  };
+
+  function cargarEjemplo(tipo) {
+    document.getElementById('input-text').value = ejemplos[tipo];
+    traducir();
+  }
+
+  function limpiar() {
+    document.getElementById('input-text').value = '';
+    document.getElementById('doc-text').innerHTML = '<span class="doc-empty">Aquí aparecerá tu texto con los términos técnicos resaltados.</span>';
+    document.getElementById('notes-list').innerHTML = '<span class="notes-empty">Las explicaciones en lenguaje sencillo aparecerán aquí, una por cada término encontrado.</span>';
+    document.getElementById('notes-count').style.display = 'none';
+    document.getElementById('image-input').value = '';
+    document.getElementById('image-preview').style.display = 'none';
+    document.getElementById('ocr-progress-wrap').style.display = 'none';
+    document.getElementById('ocr-status-text').textContent = '';
+  }
+
+  /* ═══════════ SUBIR FOTO (OCR) ═══════════ */
+  const estadosOCR = {
+    'loading tesseract core': 'Cargando el motor de lectura…',
+    'initializing tesseract': 'Iniciando…',
+    'loading language traineddata': 'Descargando el paquete de español…',
+    'initialized api': 'Listo, empezando a leer…',
+    'recognizing text': 'Leyendo el texto de la imagen…'
+  };
+
+  async function procesarImagen(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const preview = document.getElementById('image-preview');
+    const progressWrap = document.getElementById('ocr-progress-wrap');
+    const progressBar = document.getElementById('ocr-progress-bar');
+    const statusText = document.getElementById('ocr-status-text');
+    const textarea = document.getElementById('input-text');
+
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = 'block';
+    progressWrap.style.display = 'block';
+    progressBar.style.width = '0%';
+    statusText.textContent = 'Preparando imagen…';
+
+    if (typeof Tesseract === 'undefined') {
+      statusText.textContent = 'El lector aún se está cargando, espera unos segundos e inténtalo de nuevo.';
+      progressWrap.style.display = 'none';
+      return;
+    }
+
+    try {
+      const { data } = await Tesseract.recognize(file, 'spa', {
+        logger: m => {
+          if (typeof m.progress === 'number') {
+            progressBar.style.width = (m.progress * 100) + '%';
+          }
+          if (m.status) {
+            statusText.textContent = estadosOCR[m.status] || m.status;
+          }
+        }
+      });
+
+      textarea.value = data.text.trim();
+      progressWrap.style.display = 'none';
+      statusText.textContent = '✅ Texto extraído. Revísalo (el OCR puede cometer errores) y pulsa "Traducir".';
+      textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } catch (err) {
+      progressWrap.style.display = 'none';
+      statusText.textContent = 'No se pudo leer la imagen. Prueba con una foto más clara o pega el texto manualmente.';
+    }
+  }
+
+  /* ═══════════ TRADUCIR ═══════════ */
+  function traducir() {
+    const raw = document.getElementById('input-text').value;
+    const docEl = document.getElementById('doc-text');
+    const notesEl = document.getElementById('notes-list');
+    const countEl = document.getElementById('notes-count');
+
+    if (!raw.trim()) {
+      docEl.innerHTML = '<span class="doc-empty">Pega algún texto arriba antes de traducir.</span>';
+      notesEl.innerHTML = '<span class="notes-empty">Las explicaciones en lenguaje sencillo aparecerán aquí, una por cada término encontrado.</span>';
+      countEl.style.display = 'none';
+      return;
+    }
+
+    const escaped = escapeHtml(raw);
+    const encontrados = new Map();
+
+    const resaltado = escaped.replace(regex, (match) => {
+      const key = match.toLowerCase().normalize('NFC');
+      const entry = glosarioMap[key];
+      if (!entry) return match;
+      if (!encontrados.has(key)) encontrados.set(key, entry);
+      return `<mark class="hl hl-${entry.cat}" data-key="${key}">${match}</mark>`;
+    });
+
+    docEl.innerHTML = resaltado;
+
+    if (encontrados.size === 0) {
+      notesEl.innerHTML = '<span class="notes-empty">No hemos encontrado términos de nuestro diccionario en este texto. Prueba con otro fragmento, o consulta directamente con un profesional si tienes dudas.</span>';
+      countEl.style.display = 'none';
+    } else {
+      countEl.style.display = 'block';
+      countEl.textContent = encontrados.size === 1
+        ? '1 término encontrado'
+        : encontrados.size + ' términos encontrados';
+
+      let html = '';
+      encontrados.forEach((entry, key) => {
+        html += `<div class="note-card ${entry.cat}" data-key="${key}">
+          <p class="note-term">${key}</p>
+          <p class="note-def">${entry.def}</p>
+        </div>`;
+      });
+      notesEl.innerHTML = html;
+    }
+
+    activarInteracciones();
+  }
+
+  /* ═══════════ INTERACCIÓN: resaltar ↔ nota ═══════════ */
+  function activarInteracciones() {
+    const marks = document.querySelectorAll('mark.hl');
+    const notes = document.querySelectorAll('.note-card');
+
+    function activar(key) {
+      marks.forEach(m => m.classList.toggle('active', m.dataset.key === key));
+      notes.forEach(n => n.classList.toggle('active', n.dataset.key === key));
+    }
+    function limpiarActivos() {
+      marks.forEach(m => m.classList.remove('active'));
+      notes.forEach(n => n.classList.remove('active'));
+    }
+
+    marks.forEach(m => {
+      m.addEventListener('mouseenter', () => activar(m.dataset.key));
+      m.addEventListener('mouseleave', limpiarActivos);
+      m.addEventListener('click', () => {
+        const note = document.querySelector(`.note-card[data-key="${m.dataset.key}"]`);
+        if (note) note.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        activar(m.dataset.key);
+      });
+    });
+
+    notes.forEach(n => {
+      n.addEventListener('mouseenter', () => activar(n.dataset.key));
+      n.addEventListener('mouseleave', limpiarActivos);
+    });
+  }
+</script>
+</body>
+</html>
