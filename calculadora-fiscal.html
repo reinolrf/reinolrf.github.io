@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora Fiscal — España 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #dde5df;
+    --paper: #fbf9f4;
+    --paper-edge: #f1ede2;
+    --ink: #1f2e2a;
+    --accent: #0e5c4d;
+    --accent-dark: #073d32;
+    --stamp: #b23a2e;
+    --gold: #c99a2e;
+    --line: #d8d3c7;
+    --muted: #6f6a5e;
+    --radius: 14px;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(255,255,255,0.4) 0%, transparent 35%),
+      radial-gradient(circle at 90% 80%, rgba(255,255,255,0.25) 0%, transparent 40%);
+    color: var(--ink);
+    min-height: 100vh;
+    padding: 2.5rem 1.25rem 4rem;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; }
+
+  /* ───────── HEADER ───────── */
+  header {
+    text-align: center;
+    margin-bottom: 2.5rem;
+    position: relative;
+  }
+
+  .brand-stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 2px solid var(--accent);
+    border-radius: 999px;
+    padding: 0.35rem 1rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    background: rgba(255,255,255,0.5);
+    margin-bottom: 1.25rem;
+    transform: rotate(-1.5deg);
+  }
+
+  .brand-stamp .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--stamp);
+    display: inline-block;
+  }
+
+  h1 {
+    font-family: 'Fraunces', serif;
+    font-weight: 800;
+    font-size: clamp(2.4rem, 6vw, 3.6rem);
+    line-height: 1.05;
+    margin: 0 0 0.75rem;
+    color: var(--accent-dark);
+    letter-spacing: -0.01em;
+  }
+
+  .subtitle {
+    max-width: 540px;
+    margin: 0 auto;
+    color: var(--muted);
+    font-size: 1.02rem;
+    line-height: 1.6;
+  }
+
+  /* ───────── TABS ───────── */
+  .tabs {
+    display: flex;
+    gap: 0.4rem;
+    padding: 0 0.4rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    letter-spacing: 0.01em;
+    color: #e7efe9;
+    background: var(--accent);
+    border: none;
+    padding: 0.85rem 1.4rem;
+    border-radius: 12px 12px 0 0;
+    cursor: pointer;
+    white-space: nowrap;
+    position: relative;
+    top: 4px;
+    transition: top 0.15s ease, background 0.15s ease, color 0.15s ease;
+  }
+
+  .tab:hover { background: var(--accent-dark); }
+
+  .tab.active {
+    background: var(--paper);
+    color: var(--accent-dark);
+    top: 0;
+  }
+
+  /* ───────── PANEL ───────── */
+  .panel-card {
+    background: var(--paper);
+    border-radius: 4px 16px 16px 16px;
+    padding: 2rem;
+    box-shadow: 0 12px 40px -16px rgba(7,61,50,0.35);
+    border: 1px solid var(--paper-edge);
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 1.6rem;
+    margin: 0 0 0.4rem;
+    color: var(--accent-dark);
+  }
+
+  .panel-desc {
+    color: var(--muted);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    margin: 0 0 1.6rem;
+    max-width: 560px;
+  }
+
+  /* ───────── FORM ELEMENTS ───────── */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.4rem;
+    margin-bottom: 1.6rem;
+  }
+
+  .field { display: flex; flex-direction: column; }
+
+  .field span.flabel {
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--accent-dark);
+    margin-bottom: 0.5rem;
+  }
+
+  .input-line {
+    display: flex;
+    align-items: baseline;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 0.35rem;
+    transition: border-color 0.15s;
+  }
+  .input-line:focus-within { border-color: var(--accent); }
+
+  .input-line input,
+  .input-line select {
+    border: none;
+    background: transparent;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--ink);
+    width: 100%;
+    outline: none;
+    padding: 0.2rem 0;
+  }
+
+  .input-line select { font-family: 'Inter', sans-serif; font-size: 1rem; cursor: pointer; }
+
+  .input-line .unit {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+    font-size: 0.95rem;
+    padding-left: 0.4rem;
+  }
+
+  .field small {
+    color: var(--muted);
+    font-size: 0.78rem;
+    margin-top: 0.45rem;
+    line-height: 1.4;
+  }
+
+  .checkbox-field {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.92rem;
+    color: var(--ink);
+    cursor: pointer;
+    padding-top: 0.4rem;
+  }
+  .checkbox-field input { width: 18px; height: 18px; accent-color: var(--accent); cursor: pointer; }
+
+  .radio-row {
+    display: flex;
+    gap: 1.4rem;
+    flex-wrap: wrap;
+  }
+  .radio-row label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.92rem;
+    cursor: pointer;
+  }
+  .radio-row input { accent-color: var(--accent); width: 16px; height: 16px; cursor: pointer; }
+
+  .btn-calc {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.85rem 1.8rem;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .btn-calc:hover { background: var(--accent-dark); }
+  .btn-calc:active { transform: scale(0.98); }
+
+  hr.sep {
+    border: none;
+    border-top: 1px dashed var(--line);
+    margin: 2rem 0;
+  }
+
+  /* ───────── RESULT AREA ───────── */
+  .resultado {
+    margin-top: 1.8rem;
+    min-height: 1px;
+  }
+
+  .resultado:empty { margin-top: 0; }
+
+  .result-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+
+  .result-details { flex: 1; min-width: 240px; }
+
+  .result-line {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid var(--paper-edge);
+    font-size: 0.95rem;
+  }
+  .result-line span:first-child { color: var(--muted); }
+  .result-line span:last-child {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+  }
+
+  table.breakdown {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    margin-top: 1rem;
+  }
+  table.breakdown th {
+    text-align: left;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 2px solid var(--line);
+  }
+  table.breakdown td {
+    padding: 0.45rem 0.5rem;
+    border-bottom: 1px solid var(--paper-edge);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  table.breakdown td:first-child, table.breakdown th:first-child { font-family: 'Inter', sans-serif; }
+  table.breakdown tr:last-child td { border-bottom: none; }
+
+  /* ───────── STAMP ───────── */
+  .stamp-box {
+    border: 3px double var(--stamp);
+    border-radius: 6px;
+    padding: 1.1rem 1.8rem;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    color: var(--stamp);
+    transform: rotate(-3deg);
+    opacity: 0;
+    flex-shrink: 0;
+  }
+  .stamp-box.show {
+    animation: stampPress 0.4s ease-out forwards;
+  }
+  @keyframes stampPress {
+    0%   { opacity: 0; transform: rotate(-3deg) scale(1.5); }
+    60%  { opacity: 1; transform: rotate(-3deg) scale(0.94); }
+    100% { opacity: 1; transform: rotate(-3deg) scale(1); }
+  }
+  .stamp-box .s-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.85;
+    text-align: center;
+  }
+  .stamp-box .s-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.9rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .stamp-box .s-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    text-align: center;
+    opacity: 0.85;
+  }
+
+  .note {
+    background: rgba(201,154,46,0.12);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 6px 6px 0;
+    padding: 0.7rem 1rem;
+    font-size: 0.85rem;
+    color: var(--accent-dark);
+    margin-top: 1.4rem;
+    line-height: 1.5;
+  }
+
+  /* ───────── FOOTER ───────── */
+  footer {
+    max-width: 880px;
+    margin: 2.5rem auto 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    padding: 0 1rem;
+  }
+  footer p { margin: 0.3rem 0; }
+
+  /* ───────── RESPONSIVE ───────── */
+  @media (max-width: 560px) {
+    .panel-card { padding: 1.4rem; }
+    .tab { padding: 0.7rem 1rem; font-size: 0.85rem; }
+    .result-row { flex-direction: column; }
+    .stamp-box { align-self: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="brand-stamp"><span class="dot"></span> Calc · Fiscal 2026</div>
+    <h1>Calculadora Fiscal</h1>
+    <p class="subtitle">Estima tu IRPF, tu cuota de autónomo, el IVA de tus facturas y las retenciones — con las tablas oficiales de 2026. Resultados orientativos: no sustituyen a un asesor fiscal.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-target="irpf">IRPF · Renta</button>
+    <button class="tab" data-target="autonomos">Autónomos</button>
+    <button class="tab" data-target="iva">IVA</button>
+    <button class="tab" data-target="retenciones">Retenciones</button>
+  </nav>
+
+  <div class="panel-card">
+
+    <!-- ═══════════ IRPF ═══════════ -->
+    <section class="panel active" id="panel-irpf">
+      <h2>IRPF — Declaración de la Renta</h2>
+      <p class="panel-desc">Calcula tu cuota íntegra estimada aplicando la escala general progresiva 2026 (tramo estatal + autonómico de referencia, del 19% al 47%).</p>
+
+      <div class="form-grid">
+        <div class="field">
+          <span class="flabel">Ingresos brutos anuales</span>
+          <div class="input-line">
+            <input type="number" id="irpf-ingresos" placeholder="30000" min="0">
+            <span class="unit">€</span>
+          </div>
+          <small>Suma de tu salario u otros rendimientos del año.</small>
+        </div>
+        <div class="field">
+          <span class="flabel">Reducciones adicionales</span>
+          <div class="input-line">
+            <input type="number" id="irpf-reducciones" value="0" min="0">
+            <span class="unit">€</span>
+          </div>
+          <small>Planes de pensiones, cuotas sindicales, etc. (opcional).</small>
+        </div>
+        <div class="field">
+          <span class="flabel">Mínimo personal y familiar</span>
+          <div class="input-line">
+            <input type="number" id="irpf-minimo" value="5550" min="0">
+            <span class="unit">€</span>
+          </div>
+          <small>5.550 € por defecto (sin hijos ni mayores a cargo). Aumenta si tienes descendientes.</small>
+        </div>
+      </div>
+
+      <button class="btn-calc" onclick="calcularIRPF()">Calcular IRPF</button>
+
+      <div class="resultado" id="irpf-resultado"></div>
+
+      <div class="note">
+        Esta estimación usa la escala general de referencia (estatal + autonómica genérica). El importe real varía según tu comunidad autónoma, situación familiar y deducciones específicas.
+      </div>
+    </section>
+
+    <!-- ═══════════ AUTÓNOMOS ═══════════ -->
+    <section class="panel" id="panel-autonomos">
+      <h2>Cuota de Autónomos (RETA)</h2>
+      <p class="panel-desc">Calcula tu rendimiento neto y la cuota mensual que te corresponde según los 15 tramos de cotización por ingresos reales de 2026 (con el MEI del 0,9% incluido).</p>
+
+      <div class="form-grid">
+        <div class="field">
+          <span class="flabel">Ingresos mensuales (facturación)</span>
+          <div class="input-line">
+            <input type="number" id="auto-ingresos" placeholder="1800" min="0">
+            <span class="unit">€</span>
+          </div>
+          <small>Media mensual de lo que facturas.</small>
+        </div>
+        <div class="field">
+          <span class="flabel">Gastos deducibles mensuales</span>
+          <div class="input-line">
+            <input type="number" id="auto-gastos" value="0" min="0">
+            <span class="unit">€</span>
+          </div>
+          <small>Material, software, suministros, etc.</small>
+        </div>
+      </div>
+
+      <label class="checkbox-field">
+        <input type="checkbox" id="auto-tarifaplana">
+        Soy nuevo autónomo y quiero ver la tarifa plana
+      </label>
+
+      <br>
+      <button class="btn-calc" onclick="calcularAutonomos()" style="margin-top:1.2rem;">Calcular cuota</button>
+
+      <div class="resultado" id="auto-resultado"></div>
+
+      <div class="note">
+        El rendimiento neto se calcula como (ingresos − gastos) con una reducción adicional del 7% por gastos genéricos, tal y como prevé el sistema RETA para autónomos persona física. La tarifa plana de 80 €/mes aplica durante los primeros 12 meses de actividad (ampliable hasta 24 si tus rendimientos siguen por debajo del SMI).
+      </div>
+    </section>
+
+    <!-- ═══════════ IVA ═══════════ -->
+    <section class="panel" id="panel-iva">
+      <h2>IVA</h2>
+      <p class="panel-desc">Añade o desglosa el IVA de un importe, y calcula el resultado de tu liquidación trimestral (Modelo 303 simplificado).</p>
+
+      <h3 style="font-family:'Fraunces',serif; font-size:1.05rem; color:var(--accent-dark); margin:0 0 1rem;">Calculadora rápida</h3>
+
+      <div class="form-grid">
+        <div class="field">
+          <span class="flabel">Importe</span>
+          <div class="input-line">
+            <input type="number" id="iva-importe" placeholder="100" min="0">
+            <span class="unit">€</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="flabel">Tipo de IVA</span>
+          <div class="input-line">
+            <select id="iva-tipo">
+              <option value="21">21% — General</option>
+              <option value="10">10% — Reducido</option>
+              <option value="4">4% — Superreducido</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <span class="flabel">El importe es...</span>
+          <div class="radio-row" style="padding-top:0.4rem;">
+            <label><input type="radio" name="iva-modo" value="base" checked> Base (sin IVA)</label>
+            <label><input type="radio" name="iva-modo" value="total"> Total (con IVA)</label>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-calc" onclick="calcularIVA()">Calcular IVA</button>
+      <div class="resultado" id="iva-resultado"></div>
+
+      <hr class="sep">
+
+      <h3 style="font-family:'Fraunces',serif; font-size:1.05rem; color:var(--accent-dark); margin:0 0 1rem;">Liquidación trimestral</h3>
+      <div class="form-grid">
+        <div class="field">
+          <span class="flabel">IVA repercutido (ventas)</span>
+          <div class="input-line">
+            <input type="number" id="iva-repercutido" placeholder="500" min="0">
+            <span class="unit">€</span>
+          </div>
+          <small>Total de IVA cobrado en tus facturas emitidas.</small>
+        </div>
+        <div class="field">
+          <span class="flabel">IVA soportado (compras)</span>
+          <div class="input-line">
+            <input type="number" id="iva-soportado" placeholder="120" min="0">
+            <span class="unit">€</span>
+          </div>
+          <small>Total de IVA pagado en tus gastos y facturas recibidas.</small>
+        </div>
+      </div>
+
+      <button class="btn-calc" onclick="calcularLiquidacion()">Calcular liquidación</button>
+      <div class="resultado" id="liq-resultado"></div>
+    </section>
+
+    <!-- ═══════════ RETENCIONES ═══════════ -->
+    <section class="panel" id="panel-retenciones">
+      <h2>Retenciones en facturas</h2>
+      <p class="panel-desc">Calcula el IVA, la retención de IRPF y el líquido que cobrarás por una factura profesional.</p>
+
+      <div class="form-grid">
+        <div class="field">
+          <span class="flabel">Base imponible</span>
+          <div class="input-line">
+            <input type="number" id="ret-base" placeholder="1000" min="0">
+            <span class="unit">€</span>
+          </div>
+        </div>
+        <div class="field">
+          <span class="flabel">Tipo de IVA</span>
+          <div class="input-line">
+            <select id="ret-iva">
+              <option value="21">21% — General</option>
+              <option value="10">10% — Reducido</option>
+              <option value="4">4% — Superreducido</option>
+              <option value="0">0% — Exento / sin IVA</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <span class="flabel">Retención de IRPF</span>
+          <div class="input-line">
+            <select id="ret-irpf">
+              <option value="15">15% — Actividad profesional (general)</option>
+              <option value="7">7% — Nuevo autónomo (1er-3er año)</option>
+              <option value="2">2% — Actividad agrícola/ganadera</option>
+              <option value="1">1% — Módulos</option>
+              <option value="0">0% — Sin retención</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-calc" onclick="calcularRetencion()">Calcular factura</button>
+      <div class="resultado" id="ret-resultado"></div>
+
+      <div class="note">
+        La retención solo se aplica cuando facturas a una empresa o a otro profesional, nunca cuando facturas a un particular.
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <p>Datos basados en la escala general del IRPF 2026 (Agencia Tributaria) y la Orden PJC/297/2026 de cuotas de autónomos (RETA). Última verificación: junio de 2026.</p>
+    <p>Esta herramienta ofrece estimaciones orientativas y no constituye asesoramiento fiscal, legal ni financiero. Consulta siempre con un gestor o asesor para tu caso concreto.</p>
+  </footer>
+
+</div>
+
+<script>
+  /* ───────── TABS ───────── */
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.target).classList.add('active');
+    });
+  });
+
+  /* ───────── HELPERS ───────── */
+  const fmt = new Intl.NumberFormat('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const euro = n => fmt.format(n) + ' €';
+  const num = id => {
+    const v = parseFloat(document.getElementById(id).value);
+    return isNaN(v) || v < 0 ? 0 : v;
+  };
+
+  function stampHTML(label, value, sub) {
+    return `<div class="stamp-box">
+      <span class="s-label">${label}</span>
+      <span class="s-value">${value}</span>
+      ${sub ? `<span class="s-sub">${sub}</span>` : ''}
+    </div>`;
+  }
+
+  function renderResult(targetId, html) {
+    const el = document.getElementById(targetId);
+    el.innerHTML = html;
+    const stamp = el.querySelector('.stamp-box');
+    if (stamp) {
+      // restart animation
+      stamp.classList.remove('show');
+      requestAnimationFrame(() => requestAnimationFrame(() => stamp.classList.add('show')));
+    }
+  }
+
+  /* ───────── IRPF ───────── */
+  const irpfBrackets = [
+    { limit: 12450,  rate: 0.19 },
+    { limit: 20200,  rate: 0.24 },
+    { limit: 35200,  rate: 0.30 },
+    { limit: 60000,  rate: 0.37 },
+    { limit: 300000, rate: 0.45 },
+    { limit: Infinity, rate: 0.47 },
+  ];
+
+  function calcularIRPF() {
+    const ingresos = num('irpf-ingresos');
+    const reducciones = num('irpf-reducciones');
+    const minimo = num('irpf-minimo');
+
+    const baseLiquidable = Math.max(0, ingresos - reducciones - minimo);
+
+    let cuota = 0;
+    let prev = 0;
+    let rows = '';
+    for (const b of irpfBrackets) {
+      if (baseLiquidable <= prev) break;
+      const tramoBase = Math.min(baseLiquidable, b.limit) - prev;
+      const tramoCuota = tramoBase * b.rate;
+      cuota += tramoCuota;
+      const limitLabel = b.limit === Infinity ? '∞' : euro(b.limit);
+      rows += `<tr>
+        <td>${euro(prev)} – ${limitLabel}</td>
+        <td>${(b.rate * 100).toFixed(0)}%</td>
+        <td>${euro(tramoBase)}</td>
+        <td>${euro(tramoCuota)}</td>
+      </tr>`;
+      prev = b.limit;
+    }
+
+    const tipoEfectivo = ingresos > 0 ? (cuota / ingresos) * 100 : 0;
+
+    let html = `<div class="result-row">
+      ${stampHTML('Cuota íntegra estimada', euro(cuota), 'Tipo efectivo: ' + tipoEfectivo.toFixed(1) + '%')}
+      <div class="result-details">
+        <div class="result-line"><span>Ingresos brutos</span><span>${euro(ingresos)}</span></div>
+        <div class="result-line"><span>Reducciones + mínimo</span><span>${euro(reducciones + minimo)}</span></div>
+        <div class="result-line"><span>Base liquidable</span><span>${euro(baseLiquidable)}</span></div>
+        ${baseLiquidable > 0 ? `<table class="breakdown">
+          <thead><tr><th>Tramo</th><th>Tipo</th><th>Base</th><th>Cuota</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>` : ''}
+      </div>
+    </div>`;
+
+    renderResult('irpf-resultado', html);
+  }
+
+  /* ───────── AUTÓNOMOS ───────── */
+  const tramosAutonomos = [
+    { max: 670,      cuota: 200, mei: 205.88 },
+    { max: 900,      cuota: 220, mei: 226.47 },
+    { max: 1166.70,  cuota: 260, mei: 267.64 },
+    { max: 1300,     cuota: 291, mei: 299.64 },
+    { max: 1500,     cuota: 294, mei: 302.64 },
+    { max: 1700,     cuota: 294, mei: 302.64 },
+    { max: 1850,     cuota: 310, mei: 319.12 },
+    { max: 2030,     cuota: 315, mei: 324.26 },
+    { max: 2330,     cuota: 320, mei: 329.41 },
+    { max: 2760,     cuota: 340, mei: 349.98 },
+    { max: 3190,     cuota: 370, mei: 380.85 },
+    { max: 3620,     cuota: 390, mei: 401.43 },
+    { max: 4050,     cuota: 420, mei: 432.29 },
+    { max: 6000,     cuota: 500, mei: 514.61 },
+    { max: Infinity, cuota: 590, mei: 607.31 },
+  ];
+
+  function calcularAutonomos() {
+    const ingresos = num('auto-ingresos');
+    const gastos = num('auto-gastos');
+    const tarifaPlana = document.getElementById('auto-tarifaplana').checked;
+
+    const rendimientoNeto = Math.max(0, (ingresos - gastos) * 0.93);
+
+    let html = '';
+
+    if (tarifaPlana) {
+      html = `<div class="result-row">
+        ${stampHTML('Cuota tarifa plana', '80,00 €', '/ mes · primeros 12 meses')}
+        <div class="result-details">
+          <div class="result-line"><span>Rendimiento neto estimado</span><span>${euro(rendimientoNeto)} / mes</span></div>
+          <div class="result-line"><span>Cuota tarifa plana</span><span>80,00 € / mes</span></div>
+          <div class="result-line"><span>Duración</span><span>12 meses</span></div>
+        </div>
+      </div>`;
+    } else {
+      let tramoIndex = tramosAutonomos.findIndex(t => rendimientoNeto <= t.max);
+      if (tramoIndex === -1) tramoIndex = tramosAutonomos.length - 1;
+      const tramo = tramosAutonomos[tramoIndex];
+      const min = tramoIndex === 0 ? 0 : tramosAutonomos[tramoIndex - 1].max;
+      const maxLabel = tramo.max === Infinity ? '∞' : euro(tramo.max);
+
+      html = `<div class="result-row">
+        ${stampHTML('Cuota mensual (con MEI)', euro(tramo.mei), 'Tramo ' + (tramoIndex + 1) + ' de 15')}
+        <div class="result-details">
+          <div class="result-line"><span>Ingresos mensuales</span><span>${euro(ingresos)}</span></div>
+          <div class="result-line"><span>Gastos deducibles</span><span>${euro(gastos)}</span></div>
+          <div class="result-line"><span>Rendimiento neto (−7%)</span><span>${euro(rendimientoNeto)}</span></div>
+          <div class="result-line"><span>Rango del tramo</span><span>${euro(min)} – ${maxLabel}</span></div>
+          <div class="result-line"><span>Cuota base (sin MEI)</span><span>${euro(tramo.cuota)}</span></div>
+        </div>
+      </div>`;
+    }
+
+    renderResult('auto-resultado', html);
+  }
+
+  /* ───────── IVA RÁPIDO ───────── */
+  function calcularIVA() {
+    const importe = num('iva-importe');
+    const tipo = parseFloat(document.getElementById('iva-tipo').value) / 100;
+    const modo = document.querySelector('input[name="iva-modo"]:checked').value;
+
+    let base, iva, total;
+    if (modo === 'base') {
+      base = importe;
+      iva = base * tipo;
+      total = base + iva;
+    } else {
+      total = importe;
+      base = total / (1 + tipo);
+      iva = total - base;
+    }
+
+    const html = `<div class="result-row">
+      ${stampHTML('Total con IVA', euro(total), (tipo * 100).toFixed(0) + '% IVA')}
+      <div class="result-details">
+        <div class="result-line"><span>Base imponible</span><span>${euro(base)}</span></div>
+        <div class="result-line"><span>Cuota de IVA</span><span>${euro(iva)}</span></div>
+        <div class="result-line"><span>Total</span><span>${euro(total)}</span></div>
+      </div>
+    </div>`;
+
+    renderResult('iva-resultado', html);
+  }
+
+  /* ───────── LIQUIDACIÓN TRIMESTRAL ───────── */
+  function calcularLiquidacion() {
+    const repercutido = num('iva-repercutido');
+    const soportado = num('iva-soportado');
+    const resultado = repercutido - soportado;
+
+    const positivo = resultado >= 0;
+    const label = positivo ? 'A ingresar' : 'A compensar / devolver';
+    const valor = euro(Math.abs(resultado));
+
+    const html = `<div class="result-row">
+      ${stampHTML(label, valor, 'Modelo 303 (estimado)')}
+      <div class="result-details">
+        <div class="result-line"><span>IVA repercutido</span><span>${euro(repercutido)}</span></div>
+        <div class="result-line"><span>IVA soportado</span><span>${euro(soportado)}</span></div>
+        <div class="result-line"><span>Resultado</span><span>${(positivo ? '+' : '−') + valor}</span></div>
+      </div>
+    </div>`;
+
+    renderResult('liq-resultado', html);
+  }
+
+  /* ───────── RETENCIONES ───────── */
+  function calcularRetencion() {
+    const base = num('ret-base');
+    const tipoIva = parseFloat(document.getElementById('ret-iva').value) / 100;
+    const tipoRet = parseFloat(document.getElementById('ret-irpf').value) / 100;
+
+    const iva = base * tipoIva;
+    const retencion = base * tipoRet;
+    const totalFactura = base + iva;
+    const liquido = totalFactura - retencion;
+
+    const html = `<div class="result-row">
+      ${stampHTML('Líquido a cobrar', euro(liquido), 'IVA ' + (tipoIva*100).toFixed(0) + '% · Ret. ' + (tipoRet*100).toFixed(0) + '%')}
+      <div class="result-details">
+        <div class="result-line"><span>Base imponible</span><span>${euro(base)}</span></div>
+        <div class="result-line"><span>+ IVA</span><span>${euro(iva)}</span></div>
+        <div class="result-line"><span>Total factura</span><span>${euro(totalFactura)}</span></div>
+        <div class="result-line"><span>− Retención IRPF</span><span>${euro(retencion)}</span></div>
+        <div class="result-line"><span>Líquido a cobrar</span><span>${euro(liquido)}</span></div>
+      </div>
+    </div>`;
+
+    renderResult('ret-resultado', html);
+  }
+</script>
+</body>
+</html>
