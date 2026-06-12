@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Swipe: Vida Adulta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg1: #2b2150;
+    --bg2: #1a1333;
+    --card-bg: #fffdf7;
+    --ink: #2a2440;
+    --money: #ffd166;
+    --health: #ef6b8a;
+    --energy: #5ee6c0;
+    --bar-track: rgba(255,255,255,0.12);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(ellipse 120% 80% at 50% 0%, var(--bg1) 0%, var(--bg2) 70%);
+    color: #fff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  .game {
+    width: 100%;
+    max-width: 440px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem 1.2rem;
+  }
+
+  /* HUD */
+  .hud { flex-shrink: 0; }
+
+  .top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+  }
+
+  .title {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
+    font-size: 1.15rem;
+  }
+  .title span { color: var(--energy); }
+
+  .day-counter {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 700;
+    font-size: 0.95rem;
+    background: rgba(255,255,255,0.1);
+    border-radius: 999px;
+    padding: 0.3rem 1rem;
+  }
+
+  .bars { display: flex; flex-direction: column; gap: 0.55rem; }
+
+  .bar-row { display: flex; align-items: center; gap: 0.6rem; }
+
+  .bar-icon { font-size: 1.05rem; width: 1.4rem; text-align: center; position: relative; }
+
+  .bar-icon .hint-dot {
+    position: absolute;
+    top: -4px; right: -4px;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: #fff;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .bar-icon .hint-dot.big { width: 13px; height: 13px; top: -6px; right: -6px; }
+  .bar-icon .hint-dot.show { opacity: 1; transform: scale(1); }
+
+  .bar-track {
+    flex: 1;
+    height: 14px;
+    background: var(--bar-track);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 999px;
+    transition: width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .bar-fill.money  { background: var(--money); }
+  .bar-fill.health { background: var(--health); }
+  .bar-fill.energy { background: var(--energy); }
+  .bar-fill.danger { animation: blink 0.8s ease-in-out infinite; }
+  @keyframes blink { 50% { opacity: 0.45; } }
+
+  .bar-delta {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 700;
+    font-size: 0.85rem;
+    width: 2.6rem;
+    text-align: right;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .bar-delta.show { opacity: 1; }
+  .bar-delta.pos { color: var(--energy); }
+  .bar-delta.neg { color: var(--health); }
+
+  /* CARD AREA */
+  .card-area {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.2rem 0;
+    min-height: 0;
+  }
+
+  .card {
+    position: absolute;
+    width: min(86%, 330px);
+    aspect-ratio: 3 / 4.1;
+    max-height: 92%;
+    background: var(--card-bg);
+    color: var(--ink);
+    border-radius: 22px;
+    box-shadow: 0 18px 50px -12px rgba(0,0,0,0.55);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.6rem 1.5rem;
+    cursor: grab;
+    will-change: transform;
+  }
+  .card:active { cursor: grabbing; }
+
+  .card.behind {
+    transform: scale(0.93) translateY(14px);
+    filter: brightness(0.92);
+    pointer-events: none;
+  }
+
+  .card-emoji { font-size: 3.6rem; margin-bottom: 1.1rem; }
+
+  .card-text {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 600;
+    font-size: 1.18rem;
+    line-height: 1.4;
+  }
+
+  .card-tag {
+    position: absolute;
+    top: 1rem;
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #b8503f;
+    border: 2px solid #b8503f;
+    border-radius: 6px;
+    padding: 0.15rem 0.6rem;
+    transform: rotate(-4deg);
+    display: none;
+  }
+  .card.crisis .card-tag { display: block; }
+
+  .choice-label {
+    position: absolute;
+    top: 1.2rem;
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
+    font-size: 1rem;
+    padding: 0.35rem 0.9rem;
+    border-radius: 10px;
+    border: 3px solid;
+    opacity: 0;
+    transition: opacity 0.12s;
+    max-width: 70%;
+  }
+  .choice-label.right {
+    left: 1.2rem;
+    color: #2e9e6b;
+    border-color: #2e9e6b;
+    transform: rotate(-8deg);
+  }
+  .choice-label.left {
+    right: 1.2rem;
+    color: #c0392b;
+    border-color: #c0392b;
+    transform: rotate(8deg);
+  }
+
+  .swipe-hints {
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+  }
+
+  /* OVERLAYS */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 11, 38, 0.92);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .overlay.show { opacity: 1; pointer-events: auto; }
+
+  .overlay-card { max-width: 360px; width: 100%; text-align: center; }
+
+  .overlay-emoji { font-size: 4rem; margin-bottom: 0.8rem; }
+
+  .overlay h1 {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
+    font-size: 2rem;
+    margin: 0 0 0.6rem;
+    line-height: 1.15;
+  }
+  .overlay h1 span { color: var(--energy); }
+
+  .overlay p {
+    color: rgba(255,255,255,0.75);
+    font-size: 0.98rem;
+    line-height: 1.55;
+    margin: 0 0 1.6rem;
+  }
+
+  .big-days {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
+    font-size: 3.4rem;
+    color: var(--money);
+    line-height: 1;
+    margin: 0.4rem 0 0.2rem;
+  }
+  .big-days-label {
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 1.4rem;
+  }
+
+  .record-line {
+    font-size: 0.88rem;
+    color: var(--energy);
+    margin-bottom: 1.4rem;
+    font-weight: 600;
+  }
+
+  .btn-play {
+    font-family: 'Baloo 2', cursive;
+    font-weight: 800;
+    font-size: 1.15rem;
+    background: var(--energy);
+    color: #143329;
+    border: none;
+    border-radius: 14px;
+    padding: 0.9rem 2.6rem;
+    cursor: pointer;
+    box-shadow: 0 6px 0 #2d9678;
+    transition: transform 0.1s, box-shadow 0.1s;
+  }
+  .btn-play:active { transform: translateY(4px); box-shadow: 0 2px 0 #2d9678; }
+</style>
+</head>
+<body>
+
+<div class="game">
+  <div class="hud">
+    <div class="top-row">
+      <div class="title">Swipe: <span>Vida Adulta</span></div>
+      <div class="day-counter">Día <span id="day">1</span></div>
+    </div>
+    <div class="bars">
+      <div class="bar-row">
+        <div class="bar-icon">💰<span class="hint-dot" id="dot-money"></span></div>
+        <div class="bar-track"><div class="bar-fill money" id="bar-money"></div></div>
+        <div class="bar-delta" id="delta-money"></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-icon">❤️<span class="hint-dot" id="dot-health"></span></div>
+        <div class="bar-track"><div class="bar-fill health" id="bar-health"></div></div>
+        <div class="bar-delta" id="delta-health"></div>
+      </div>
+      <div class="bar-row">
+        <div class="bar-icon">⚡<span class="hint-dot" id="dot-energy"></span></div>
+        <div class="bar-track"><div class="bar-fill energy" id="bar-energy"></div></div>
+        <div class="bar-delta" id="delta-energy"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card-area" id="card-area"></div>
+
+  <div class="swipe-hints">
+    <span>👈 No / Rechazar</span>
+    <span>Sí / Aceptar 👉</span>
+  </div>
+</div>
+
+<div class="overlay show" id="start-overlay">
+  <div class="overlay-card">
+    <div class="overlay-emoji">🧑‍💼</div>
+    <h1>Swipe: <span>Vida Adulta</span></h1>
+    <p>Eres un adulto promedio intentando sobrevivir. Desliza las tarjetas a la <b>derecha (sí)</b> o a la <b>izquierda (no)</b> y mantén tu 💰 dinero, ❤️ salud y ⚡ energía por encima de cero.<br><br>¿Cuántos días aguantarás?</p>
+    <button class="btn-play" onclick="iniciar()">Jugar</button>
+  </div>
+</div>
+
+<div class="overlay" id="over-overlay">
+  <div class="overlay-card">
+    <div class="overlay-emoji" id="over-emoji">💀</div>
+    <h1 id="over-title">Game Over</h1>
+    <p id="over-reason"></p>
+    <div class="big-days" id="over-days">0</div>
+    <div class="big-days-label">días sobrevividos de adulto</div>
+    <div class="record-line" id="over-record"></div>
+    <button class="btn-play" onclick="iniciar()">Otra vez</button>
+  </div>
+</div>
+
+<script>
+/* m = dinero, h = salud, e = energía */
+
+const cartasNormales = [
+  { emoji:"🍣", text:"Tus amigos te invitan a cenar a un sitio carísimo para celebrar un ascenso.",
+    right:{label:"Ir", m:-30, e:+20}, left:{label:"Quedarte en casa", e:-15} },
+  { emoji:"💼", text:"Tu jefe te pide quedarte haciendo horas extra pagadas el sábado.",
+    right:{label:"Aceptar", m:+30, h:-15, e:-20}, left:{label:"Rechazar", h:+10} },
+  { emoji:"🍔", text:"Son las 2 AM, estás viendo una serie y te entra antojo de comida rápida.",
+    right:{label:"Pedir", m:-10, h:-15, e:+10}, left:{label:"Agua y a dormir", h:+15, e:-5} },
+  { emoji:"🏋️", text:"Te llega una oferta del gimnasio: matrícula gratis este mes.",
+    right:{label:"Apuntarte", m:-15, h:+20, e:-5}, left:{label:"Paso", e:+5} },
+  { emoji:"📱", text:"Sale el nuevo móvil que llevas meses mirando. Hay financiación.",
+    right:{label:"Comprarlo", m:-35, e:+25}, left:{label:"El mío va bien", e:-10} },
+  { emoji:"🤧", text:"Te despiertas con dolor de garganta y algo de fiebre.",
+    right:{label:"Ir al médico", m:-10, h:+20}, left:{label:"Ya se pasará", h:-20, e:-5} },
+  { emoji:"☕", text:"Un compañero te propone tomar un café y desahogarse del trabajo.",
+    right:{label:"Claro", m:-5, e:+15}, left:{label:"Hoy no puedo", e:-5} },
+  { emoji:"🧹", text:"El piso está hecho un desastre. Llevas semanas posponiéndolo.",
+    right:{label:"Limpiar a fondo", h:+10, e:-15}, left:{label:"Otro día", h:-5, e:+5} },
+  { emoji:"💸", text:"Tu colega te pide 50€ prestados. \"Te los devuelvo el mes que viene, de verdad.\"",
+    right:{label:"Prestárselos", m:-20, e:+10}, left:{label:"No puedo", e:-10} },
+  { emoji:"🎮", text:"Sale el videojuego del año. Todos tus amigos ya lo tienen.",
+    right:{label:"Comprarlo", m:-20, e:+20, h:-5}, left:{label:"Esperar rebajas", e:-10} },
+  { emoji:"🥗", text:"Decides hacer la compra. ¿Carrito saludable o lo de siempre?",
+    right:{label:"Saludable", m:-15, h:+15}, left:{label:"Lo de siempre", m:-8, h:-8} },
+  { emoji:"🚴", text:"Hace un día precioso. Podrías salir a moverte un poco.",
+    right:{label:"Salir", h:+15, e:+10}, left:{label:"Sofá y manta", h:-5, e:+5} },
+  { emoji:"📺", text:"\"Solo un capítulo más\"... son las 23:40 y mañana madrugas.",
+    right:{label:"Uno más", h:-10, e:+10}, left:{label:"A dormir", h:+10, e:-5} },
+  { emoji:"🦷", text:"Hace dos años que no vas al dentista. Lo sabes.",
+    right:{label:"Pedir cita", m:-25, h:+15}, left:{label:"Si no me duele...", h:-10} },
+  { emoji:"🎂", text:"Es el cumpleaños de tu madre. Quiere que vayas a comer el domingo.",
+    right:{label:"Ir", m:-10, e:+15, h:+5}, left:{label:"Excusa creativa", e:-20} },
+  { emoji:"👔", text:"Entrevista para un trabajo mejor pagado... en tu día libre.",
+    right:{label:"Ir", m:+25, e:-15}, left:{label:"Estoy bien así", e:+5, m:-5} },
+  { emoji:"🛒", text:"Ofertón: 70% de descuento en cosas que no necesitas.",
+    right:{label:"¡Es un chollo!", m:-20, e:+10}, left:{label:"Resistir", e:-5} },
+  { emoji:"🧘", text:"Tu app de meditación te recuerda que llevas 47 días sin entrar.",
+    right:{label:"Meditar 10 min", h:+10, e:+10}, left:{label:"Borrar la app", e:+5, h:-5} },
+  { emoji:"🍕", text:"Viernes noche. ¿Cocinar o pedir pizza?",
+    right:{label:"Pizza", m:-12, e:+15, h:-8}, left:{label:"Cocinar", h:+10, e:-10} },
+  { emoji:"📞", text:"Llamada desconocida. Podría ser spam... o algo importante.",
+    right:{label:"Contestar", e:-10}, left:{label:"Ignorar", e:+5} },
+  { emoji:"🏖️", text:"Tus amigos organizan una escapada de fin de semana.",
+    right:{label:"Apuntarse", m:-30, e:+25, h:+10}, left:{label:"No llego a fin de mes", e:-20} },
+  { emoji:"💊", text:"Se te han acabado las vitaminas que te recomendó el médico.",
+    right:{label:"Comprar más", m:-10, h:+10}, left:{label:"Bah", h:-8} },
+  { emoji:"🚿", text:"Ducha fría para activarte, dicen en internet.",
+    right:{label:"Probar", h:+10, e:+5}, left:{label:"Ni loco", e:+2} },
+  { emoji:"💻", text:"Un conocido te ofrece un trabajillo freelance para el finde.",
+    right:{label:"Aceptar", m:+25, e:-20}, left:{label:"Necesito descansar", h:+10} },
+  { emoji:"🍻", text:"Jueves. \"¿Unas cañas rápidas?\" Nunca son rápidas.",
+    right:{label:"Venga va", m:-15, e:+15, h:-10}, left:{label:"Hoy no", e:-10} },
+  { emoji:"🧾", text:"Toca revisar las suscripciones: pagas 4 plataformas y usas 1.",
+    right:{label:"Cancelar 3", m:+15, e:-5}, left:{label:"Algún día las usaré", m:-10} },
+  { emoji:"😴", text:"Sábado por la mañana. Podrías dormir hasta tarde sin culpa.",
+    right:{label:"Dormir", h:+15, e:+10}, left:{label:"Madrugar y aprovechar", e:-5, m:+5} },
+  { emoji:"🐶", text:"Tu vecino te pide que cuides a su perro el fin de semana. Te paga.",
+    right:{label:"Aceptar", m:+15, e:-10, h:+5}, left:{label:"No puedo", e:+5} },
+  { emoji:"📚", text:"Ese curso online que compraste sigue al 4% de progreso.",
+    right:{label:"Estudiar hoy", e:-15, m:+5}, left:{label:"La semana que viene", e:+5} },
+  { emoji:"🥡", text:"Llevar táper al trabajo toda la semana: el plan definitivo de ahorro.",
+    right:{label:"Modo táper", m:+15, h:+5, e:-10}, left:{label:"Menú del día", m:-15, e:+10} },
+  { emoji:"🎟️", text:"Tu grupo favorito da concierto. Las entradas no son baratas.",
+    right:{label:"¡Comprar!", m:-25, e:+30}, left:{label:"Verlo por stories", e:-15} },
+  { emoji:"🩺", text:"Tu empresa ofrece un chequeo médico gratuito.",
+    right:{label:"Hacérselo", h:+15, e:-5}, left:{label:"Qué pereza", h:-5} },
+  { emoji:"🚌", text:"El coche necesita una revisión. Podrías ir en bus un tiempo.",
+    right:{label:"Revisión ya", m:-25, h:+5}, left:{label:"Aguanta, campeón", e:-5} },
+  { emoji:"🍰", text:"Cumpleaños en la oficina. Hay tarta. Es tu tercera porción esta semana.",
+    right:{label:"Una más", h:-10, e:+10}, left:{label:"Resistir", h:+5, e:-5} },
+  { emoji:"🌙", text:"Insomnio. Tu cabeza decide repasar errores de hace 7 años.",
+    right:{label:"Levantarte y leer", h:+5, e:-5}, left:{label:"Seguir dando vueltas", h:-10, e:-10} },
+  { emoji:"💇", text:"Necesitas un corte de pelo. El bueno cuesta el doble.",
+    right:{label:"El bueno", m:-15, e:+15}, left:{label:"El barato", m:-5, e:-5} },
+  { emoji:"🧺", text:"Montaña de ropa limpia sin doblar desde hace 5 días.",
+    right:{label:"Doblarla ahora", e:-8, h:+5}, left:{label:"Vivir del montón", e:+3, h:-3} },
+  { emoji:"🤝", text:"Te invitan a una boda. Regalo, ropa, viaje... la cuenta sube.",
+    right:{label:"Ir", m:-35, e:+20}, left:{label:"Excusarte", e:-15} },
+  { emoji:"🌧️", text:"Llueve. Tenías plan de correr al aire libre.",
+    right:{label:"Correr igual", h:+10, e:-5}, left:{label:"Mañana", e:+5, h:-5} },
+  { emoji:"🍳", text:"Reto personal: cocinar en casa toda la semana.",
+    right:{label:"Acepto", m:+10, h:+10, e:-10}, left:{label:"Imposible", m:-10} },
+];
+
+const cartasCrisis = [
+  { emoji:"🧊", text:"¡Se ha roto la nevera! No hay forma de evitarlo.",
+    right:{label:"Comprar otra", m:-40}, left:{label:"Vivir sin nevera", h:-25, e:-10} },
+  { emoji:"🦠", text:"Gripe fulminante. No puedes ni levantarte.",
+    right:{label:"Médico + reposo", m:-15, h:+10, e:-10}, left:{label:"Trabajar enfermo", h:-30, m:+10} },
+  { emoji:"🚗", text:"El coche hace un ruido nuevo y aterrador.",
+    right:{label:"Al taller", m:-35}, left:{label:"Subir la música", e:-15, m:-10} },
+  { emoji:"💼", text:"Recorte en la empresa: este mes cobras menos.",
+    right:{label:"Apretarse el cinturón", m:-25, e:-10}, left:{label:"Quejarse al jefe", m:-25, e:-15} },
+  { emoji:"🦷", text:"Se te rompe una muela comiendo pan. PAN.",
+    right:{label:"Dentista urgente", m:-30, h:+5}, left:{label:"Masticar del otro lado", h:-20} },
+  { emoji:"📄", text:"Carta de Hacienda. Nunca son buenas noticias.",
+    right:{label:"Pagar lo que pide", m:-30}, left:{label:"Recurrir (abogado)", m:-20, e:-15} },
+  { emoji:"💔", text:"Discusión fuerte con alguien importante para ti.",
+    right:{label:"Hablarlo a fondo", e:-15, h:+5}, left:{label:"Guardártelo", e:-25} },
+  { emoji:"🏠", text:"El casero sube el alquiler. \"Es lo que hay.\"",
+    right:{label:"Aceptar", m:-30}, left:{label:"Buscar otro piso", m:-15, e:-25} },
+  { emoji:"📉", text:"Tu banco cobra una comisión sorpresa. Sorpresa.",
+    right:{label:"Pagarla y maldecir", m:-15, e:-5}, left:{label:"Reclamar 40 min al teléfono", m:-5, e:-20} },
+  { emoji:"💻", text:"Tu portátil muere en mitad de algo importante.",
+    right:{label:"Uno nuevo", m:-40, e:+5}, left:{label:"Repararlo (tarda semanas)", m:-15, e:-20} },
+  { emoji:"🌡️", text:"Ola de calor histórica y tu ventilador ha dicho basta.",
+    right:{label:"Aire acondicionado", m:-35, h:+10}, left:{label:"Sufrir", h:-15, e:-15} },
+  { emoji:"👟", text:"Lesión tonta haciendo deporte. El tobillo no pinta bien.",
+    right:{label:"Fisio", m:-25, h:+15}, left:{label:"Andar raro unas semanas", h:-25} },
+];
+
+let stats, day, deck, crisisDeck, lastCardText, record = 0, jugando = false;
+
+const $ = id => document.getElementById(id);
+const clamp = v => Math.max(0, Math.min(100, v));
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function iniciar() {
+  stats = { m: 55, h: 55, e: 55 };
+  day = 1;
+  deck = shuffle(cartasNormales);
+  crisisDeck = shuffle(cartasCrisis);
+  lastCardText = null;
+  jugando = true;
+  $('start-overlay').classList.remove('show');
+  $('over-overlay').classList.remove('show');
+  $('card-area').innerHTML = '';
+  actualizarHUD();
+  ponerCarta();
+  ponerCarta();
+}
+
+function siguienteCarta() {
+  const pCrisis = Math.min(0.08 + day * 0.012, 0.45);
+  let carta;
+  if (day > 3 && Math.random() < pCrisis) {
+    if (crisisDeck.length === 0) crisisDeck = shuffle(cartasCrisis);
+    carta = Object.assign({}, crisisDeck.pop(), { crisis: true });
+  } else {
+    if (deck.length === 0) deck = shuffle(cartasNormales);
+    carta = Object.assign({}, deck.pop(), { crisis: false });
+  }
+  if (carta.text === lastCardText) return siguienteCarta();
+  lastCardText = carta.text;
+  return carta;
+}
+
+function actualizarHUD() {
+  $('day').textContent = day;
+  const map = { m:'money', h:'health', e:'energy' };
+  ['m','h','e'].forEach(k => {
+    const bar = $('bar-' + map[k]);
+    bar.style.width = stats[k] + '%';
+    bar.classList.toggle('danger', stats[k] <= 20);
+  });
+}
+
+function mostrarHints(opcion) {
+  const map = { m:'money', h:'health', e:'energy' };
+  ['m','h','e'].forEach(k => {
+    const dot = $('dot-' + map[k]);
+    const delta = $('delta-' + map[k]);
+    const v = opcion ? (opcion[k] || 0) : 0;
+    if (v !== 0) {
+      dot.classList.add('show');
+      dot.classList.toggle('big', Math.abs(v) >= 20);
+      delta.textContent = (v > 0 ? '+' : '') + v;
+      delta.className = 'bar-delta show ' + (v > 0 ? 'pos' : 'neg');
+    } else {
+      dot.classList.remove('show');
+      dot.classList.remove('big');
+      delta.classList.remove('show');
+    }
+  });
+}
+
+function ponerCarta() {
+  const datos = siguienteCarta();
+  const el = document.createElement('div');
+  el.className = 'card behind' + (datos.crisis ? ' crisis' : '');
+  el.innerHTML =
+    '<span class="card-tag">¡Crisis!</span>' +
+    '<span class="choice-label right">' + datos.right.label + '</span>' +
+    '<span class="choice-label left">' + datos.left.label + '</span>' +
+    '<div class="card-emoji">' + datos.emoji + '</div>' +
+    '<div class="card-text">' + datos.text + '</div>';
+  el._datos = datos;
+  $('card-area').prepend(el);
+  reordenar();
+}
+
+function reordenar() {
+  const cards = $('card-area').querySelectorAll('.card');
+  cards.forEach((c, i) => {
+    const esTop = i === cards.length - 1;
+    c.classList.toggle('behind', !esTop);
+    if (esTop && !c._bound) activarSwipe(c);
+  });
+}
+
+function activarSwipe(card) {
+  card._bound = true;
+  let startX = 0, dx = 0, arrastrando = false;
+
+  const labelR = card.querySelector('.choice-label.right');
+  const labelL = card.querySelector('.choice-label.left');
+
+  function onDown(e) {
+    if (!jugando || card.classList.contains('behind')) return;
+    arrastrando = true;
+    startX = e.clientX;
+    card.style.transition = 'none';
+    card.setPointerCapture && card.setPointerCapture(e.pointerId);
+  }
+
+  function onMove(e) {
+    if (!arrastrando) return;
+    dx = e.clientX - startX;
+    const rot = dx / 14;
+    card.style.transform = 'translateX(' + dx + 'px) rotate(' + rot + 'deg)';
+
+    const intensidad = Math.min(Math.abs(dx) / 90, 1);
+    if (dx > 18) {
+      labelR.style.opacity = intensidad;
+      labelL.style.opacity = 0;
+      mostrarHints(card._datos.right);
+    } else if (dx < -18) {
+      labelL.style.opacity = intensidad;
+      labelR.style.opacity = 0;
+      mostrarHints(card._datos.left);
+    } else {
+      labelR.style.opacity = 0;
+      labelL.style.opacity = 0;
+      mostrarHints(null);
+    }
+  }
+
+  function onUp() {
+    if (!arrastrando) return;
+    arrastrando = false;
+    mostrarHints(null);
+
+    if (Math.abs(dx) > 95) {
+      resolver(card, dx > 0 ? 'right' : 'left');
+    } else {
+      card.style.transition = 'transform 0.3s cubic-bezier(0.22, 1, 0.36, 1)';
+      card.style.transform = '';
+      labelR.style.opacity = 0;
+      labelL.style.opacity = 0;
+    }
+    dx = 0;
+  }
+
+  card.addEventListener('pointerdown', onDown);
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+}
+
+function resolver(card, lado) {
+  const op = card._datos[lado];
+  const dir = lado === 'right' ? 1 : -1;
+
+  card.style.transition = 'transform 0.45s ease-in';
+  card.style.transform = 'translateX(' + (dir * window.innerWidth * 0.85) + 'px) rotate(' + (dir * 28) + 'deg)';
+  setTimeout(function(){ card.remove(); }, 450);
+
+  stats.m = clamp(stats.m + (op.m || 0));
+  stats.h = clamp(stats.h + (op.h || 0));
+  stats.e = clamp(stats.e + (op.e || 0));
+  actualizarHUD();
+
+  if (stats.m <= 0 || stats.h <= 0 || stats.e <= 0) {
+    jugando = false;
+    setTimeout(gameOver, 550);
+    return;
+  }
+
+  day++;
+  actualizarHUD();
+  setTimeout(function(){ ponerCarta(); reordenar(); }, 200);
+  reordenar();
+}
+
+function gameOver() {
+  let emoji, titulo, razon;
+  if (stats.m <= 0) {
+    emoji = '🏦'; titulo = 'Bancarrota';
+    razon = 'Tu cuenta ha llegado a cero. El banco te llama. No es para felicitarte.';
+  } else if (stats.h <= 0) {
+    emoji = '🤒'; titulo = 'Tu cuerpo dijo basta';
+    razon = 'Demasiados excesos, poco descanso. Te tocan semanas de recuperación.';
+  } else {
+    emoji = '🫠'; titulo = 'Burnout total';
+    razon = 'Colapso mental. Te has quedado mirando la pared 45 minutos.';
+  }
+
+  const esRecord = day > record;
+  if (esRecord) record = day;
+
+  $('over-emoji').textContent = emoji;
+  $('over-title').textContent = titulo;
+  $('over-reason').textContent = razon;
+  $('over-days').textContent = day;
+  $('over-record').textContent = esRecord ? '🏆 ¡Nuevo récord!' : 'Tu récord: ' + record + ' días';
+  $('over-overlay').classList.add('show');
+}
+
+window.addEventListener('keydown', function(e) {
+  if (!jugando) return;
+  const cards = $('card-area').querySelectorAll('.card');
+  const top = cards[cards.length - 1];
+  if (!top) return;
+  if (e.key === 'ArrowRight') resolver(top, 'right');
+  if (e.key === 'ArrowLeft') resolver(top, 'left');
+});
+</script>
+</body>
+</html>
