@@ -4,6 +4,9 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Calculadora de rebajas</title>
+<!-- Google AdSense · Auto ads -->
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9955818434859926"
+     crossorigin="anonymous"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;900&family=Space+Mono:wght@400;700&display=swap');
   :root{
@@ -94,6 +97,49 @@
     .grid{grid-template-columns:1fr}
     .ticket{max-width:360px;margin:0 auto}
   }
+  /* ------- separador + guía ------- */
+  .sep{display:flex;align-items:center;gap:14px;margin:46px 0 30px;color:var(--gris)}
+  .sep::before,.sep::after{content:"";flex:1;height:1.5px;background:var(--linea)}
+  .sep span{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:.22em}
+  .contenido{max-width:680px;margin:0 auto}
+  .contenido h2{font-weight:900;font-size:23px;letter-spacing:-.01em;margin:36px 0 12px}
+  .contenido h2:first-child{margin-top:0}
+  .contenido p{font-size:15.5px;line-height:1.65;color:#3A3D47;margin:0 0 14px}
+  .contenido strong{color:var(--tinta)}
+  .formula{background:#fff;border:1.5px solid var(--linea);border-left:5px solid var(--rebaja);border-radius:12px;
+    padding:18px 20px;font-family:'Space Mono',monospace;font-size:15px;line-height:1.8;margin:0 0 22px}
+  .formula b{color:var(--rebaja)}
+  .tabla{width:100%;border-collapse:collapse;font-family:'Space Mono',monospace;font-size:14px;margin:0 0 8px;
+    background:#fff;border:1.5px solid var(--linea);border-radius:12px;overflow:hidden}
+  .tabla th{background:var(--papel);text-align:left;padding:11px 14px;font-size:11px;letter-spacing:.05em;color:var(--gris);font-weight:700}
+  .tabla td{padding:11px 14px;border-top:1px solid var(--linea)}
+  .tabla td.f{color:var(--ok);font-weight:700}
+  .nota{background:var(--rebaja-suave);border-radius:12px;padding:15px 18px;font-size:14.5px;line-height:1.6;margin:6px 0 18px}
+  .nota b{color:var(--rebaja)}
+  .faq{border-top:1.5px dashed var(--linea);margin-top:6px}
+  .faq details{border-bottom:1.5px dashed var(--linea)}
+  .faq summary{cursor:pointer;font-weight:700;font-size:15px;padding:14px 2px;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .faq summary::-webkit-details-marker{display:none}
+  .faq summary::after{content:"+";color:var(--rebaja);font-family:'Space Mono',monospace;font-size:22px;line-height:1}
+  .faq details[open] summary::after{content:"\2013"}
+  .faq details p{padding:0 2px 15px;margin:0;font-size:14.5px;line-height:1.6;color:#3A3D47}
+  footer.pie{text-align:center;color:var(--gris);font-size:12.5px;margin:42px 0 100px;line-height:1.9}
+  footer.pie a{color:var(--rebaja);cursor:pointer;text-decoration:underline}
+  /* ------- banner cookies ------- */
+  .cookies{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:60;width:min(560px,calc(100% - 26px));
+    background:#fff;border:1.5px solid var(--linea);border-radius:16px;padding:18px 20px;
+    box-shadow:0 24px 50px -20px rgba(34,36,44,.5);display:none}
+  .cookies.show{display:block;animation:sube .3s ease}
+  @keyframes sube{from{transform:translate(-50%,14px);opacity:0}}
+  .cookies h3{margin:0 0 6px;font-weight:900;font-size:16px}
+  .cookies p{margin:0 0 14px;font-size:13px;line-height:1.55;color:#3A3D47}
+  .cookies .row{display:flex;gap:9px;flex-wrap:wrap}
+  .cookies button{border:0;border-radius:10px;padding:11px 18px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;transition:.13s}
+  .c-ok{background:var(--rebaja);color:#fff;flex:1}
+  .c-ok:hover{filter:brightness(1.07)}
+  .c-no{background:var(--papel);color:var(--tinta);border:1.5px solid var(--linea)}
+  .c-no:hover{border-color:var(--gris)}
+
   @media (prefers-reduced-motion:reduce){*{transition-duration:.01ms!important}}
 </style>
 </head>
@@ -144,6 +190,57 @@
       <div class="t-pie">GRACIAS POR SU VISITA</div>
       <div class="barras" id="barras"></div>
     </aside>
+  </div>
+
+  <div class="sep"><span>GUÍA RÁPIDA</span></div>
+
+  <article class="contenido">
+    <h2>Cómo se calcula la rebaja de un producto</h2>
+    <p>Un descuento es la parte del precio que dejas de pagar. Para saber cuánto es, multiplicas el precio por el porcentaje y ese resultado se lo restas al precio original. Con un artículo de 20 € rebajado un 10 %: el 10 % de 20 € son 2 €, así que pagas <strong>18 €</strong>.</p>
+    <div class="formula">
+      Ahorro = precio × (descuento ÷ 100)<br>
+      <b>Precio final</b> = precio − ahorro
+    </div>
+    <p>Hay un atajo aún más corto: si el descuento es del 10 %, pagas el 90 % que queda. Multiplicar directamente 20 € × 0,90 = 18 € da el mismo resultado en un solo paso.</p>
+
+    <h2>Ejemplos rápidos</h2>
+    <table class="tabla">
+      <thead><tr><th>Precio</th><th>Descuento</th><th>Ahorras</th><th>Pagas</th></tr></thead>
+      <tbody>
+        <tr><td>20,00 €</td><td>10 %</td><td>2,00 €</td><td class="f">18,00 €</td></tr>
+        <tr><td>34,99 €</td><td>20 %</td><td>7,00 €</td><td class="f">27,99 €</td></tr>
+        <tr><td>50,00 €</td><td>30 %</td><td>15,00 €</td><td class="f">35,00 €</td></tr>
+        <tr><td>120,00 €</td><td>50 %</td><td>60,00 €</td><td class="f">60,00 €</td></tr>
+        <tr><td>89,90 €</td><td>70 %</td><td>62,93 €</td><td class="f">26,97 €</td></tr>
+      </tbody>
+    </table>
+
+    <h2>Trucos para calcularlo de cabeza</h2>
+    <p><strong>El 10 %</strong> se saca moviendo la coma una posición a la izquierda: el 10 % de 45 € es 4,50 €. <strong>El 20 %</strong> es ese 10 % multiplicado por dos. <strong>El 5 %</strong> es la mitad del 10 %. Y <strong>el 50 %</strong> es simplemente la mitad del precio. Combinando esos cuatro sacas casi cualquier rebaja sin tocar la calculadora.</p>
+
+    <div class="nota"><b>Cuidado con el "descuento sobre descuento".</b> Un 30 % y luego otro 20 % no suman un 50 %. El segundo se aplica sobre el precio ya rebajado, así que el descuento real es del 44 %. Dos rebajas nunca se suman sin más.</div>
+
+    <h2>Preguntas frecuentes</h2>
+    <div class="faq">
+      <details><summary>¿Dos descuentos del 50 % hacen que sea gratis?</summary><p>No. El segundo 50 % se calcula sobre lo que quedaba tras el primero, así que acabas pagando el 25 % del precio original, no cero.</p></details>
+      <details><summary>¿Cómo saco el precio original si solo sé el rebajado?</summary><p>Divide el precio final entre (1 − descuento en tanto por uno). Si pagaste 18 € con un 10 % de rebaja: 18 ÷ 0,90 = 20 €.</p></details>
+      <details><summary>¿El descuento se aplica antes o después del IVA?</summary><p>En tienda, el precio que ves ya suele llevar el IVA incluido, así que el porcentaje se aplica sobre ese total y no tienes que hacer nada más.</p></details>
+      <details><summary>¿Sirve con cualquier moneda?</summary><p>El cálculo del porcentaje es idéntico en cualquier divisa. Aquí se muestra en euros, pero la proporción del descuento es la misma sea cual sea la moneda.</p></details>
+    </div>
+  </article>
+
+  <footer class="pie">
+    Calculadora de rebajas · calcula descuentos al instante<br>
+    <a href="index.html">Inicio</a> · <a href="privacidad.html">Privacidad y cookies</a> · <a id="verCookies">Preferencias de cookies</a>
+  </footer>
+</div>
+
+<div class="cookies" id="cookies" role="dialog" aria-label="Aviso de cookies">
+  <h3>Cookies</h3>
+  <p>Usamos cookies propias y de terceros (Google) para mostrar anuncios que mantienen esta web gratis. Puedes aceptarlas o rechazar las de publicidad.</p>
+  <div class="row">
+    <button class="c-ok" id="cAccept">Aceptar</button>
+    <button class="c-no" id="cReject">Rechazar publicidad</button>
   </div>
 </div>
 
@@ -208,6 +305,19 @@
   });
 
   pintar();
+
+  // ----- aviso de cookies -----
+  const CKEY = "rebajas:cookies";
+  const banner = $("cookies");
+  const leerCookies = () => { try { return localStorage.getItem(CKEY); } catch { return null; } };
+  const guardarCookies = (v) => { try { localStorage.setItem(CKEY, v); } catch {} };
+  const mostrar = () => banner.classList.add("show");
+  const ocultar = () => banner.classList.remove("show");
+
+  if (!leerCookies()) setTimeout(mostrar, 600);
+  $("cAccept").addEventListener("click", () => { guardarCookies("aceptado"); ocultar(); });
+  $("cReject").addEventListener("click", () => { guardarCookies("rechazado"); ocultar(); });
+  $("verCookies").addEventListener("click", (e) => { e.preventDefault(); mostrar(); });
 </script>
 </body>
 </html>
